@@ -1,15 +1,19 @@
 services:
-  # PostgreSQL Exporter
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: ${POSTGRES_EXPORTER_CONTAINER_NAME:-postgres-exporter}
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@host.docker.internal:${POSTGRES_PORT:-5445}/${POSTGRES_DB:-public}?sslmode=disable"
-      PG_EXPORTER_WEB_LISTEN_ADDRESS: "0.0.0.0:9187"
-    ports:
-      - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
-    restart: always
-    # NO NETWORKS - use default bridge
+  # PostgreSQL Exporter - MOVED to main database compose
+  # postgres-exporter:
+  #   image: prometheuscommunity/postgres-exporter:latest
+  #   container_name: ${POSTGRES_EXPORTER_CONTAINER_NAME:-postgres-exporter}
+  #   environment:
+  #     DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@host.docker.internal:${POSTGRES_PORT:-5445}/${POSTGRES_DB:-public}?sslmode=disable"
+  #     PG_EXPORTER_WEB_LISTEN_ADDRESS: "0.0.0.0:9187"
+  #   ports:
+  #     - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9187/metrics"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
 
   # Node Exporter for server metrics
   node-exporter:
@@ -29,7 +33,6 @@ services:
       - '/:/rootfs:ro'
     restart: always
     pid: host
-    # NO NETWORKS - use default bridge
 
   # Prometheus
   prometheus:
@@ -50,9 +53,7 @@ services:
       - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     restart: always
-    # NO NETWORKS - use default bridge
     depends_on:
-      - postgres-exporter
       - node-exporter
 
   # Grafana
@@ -70,7 +71,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: always
-    # NO NETWORKS - use default bridge
     depends_on:
       - prometheus
 

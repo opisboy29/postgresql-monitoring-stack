@@ -1,27 +1,25 @@
-# PostgreSQL Monitoring Stack
+# System Monitoring Stack
 
 [![GitHub](https://img.shields.io/github/license/opisboy29/postgresql-monitoring-stack)](https://github.com/opisboy29/postgresql-monitoring-stack/blob/main/LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue)](https://docs.docker.com/compose/)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-orange)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Grafana-Dashboard-green)](https://grafana.com/)
 
-Complete PostgreSQL and system monitoring stack with Prometheus, Grafana, and Docker. Pre-configured dashboards, alerts, and one-click setup for monitoring PostgreSQL databases and Linux servers.
+System monitoring stack with Prometheus, Grafana, and Node Exporter. Focused on server/system monitoring with option to connect external database exporters.
 
 ## 🚀 Features
 
-- **PostgreSQL Monitoring**: Database performance, connections, queries, and more
 - **System Monitoring**: CPU, memory, disk, network metrics for Linux/Debian servers
 - **Pre-built Dashboards**: Ready-to-use Grafana dashboards
-- **Alerting**: Built-in alerts for critical conditions
+- **Alerting**: Built-in alerts for critical system conditions
 - **Docker-based**: Easy deployment with Docker Compose
-- **One-click Setup**: Automated deployment scripts
+- **Extensible**: Easy to add external exporters (PostgreSQL, MySQL, etc.)
 
 ## 📋 Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose installed
-- PostgreSQL database running (configured for localhost:5445 by default)
 
 ### Installation
 
@@ -34,86 +32,100 @@ Complete PostgreSQL and system monitoring stack with Prometheus, Grafana, and Do
 2. **Configure environment**:
    ```bash
    cp .env.example .env
-   # Edit .env file with your PostgreSQL connection details
+   # Edit .env file if needed (optional for basic system monitoring)
    ```
 
 3. **Run setup**:
    ```bash
    # Option 1: Using setup script
-   chmod +x setup.sh && ./setup.sh
-   
-   # Option 2: Using Makefile
    make setup
    
-   # Option 3: Manual setup
+   # Option 2: Manual setup
    docker-compose up -d
    ```
 
 4. **Access services**:
-   - **Grafana**: http://localhost:3000 (admin/admin123)
-   - **Prometheus**: http://localhost:9090
-   - **PostgreSQL Exporter**: http://localhost:9187/metrics
-   - **Node Exporter**: http://localhost:9100/metrics
+   - **Grafana**: http://localhost:3004 (admin/admin123)
+   - **Prometheus**: http://localhost:9091
+   - **Node Exporter**: http://localhost:9101/metrics
 
-## 📊 Dashboards
+## 📊 Monitoring Scope
 
-### PostgreSQL Dashboard
-- Active connections monitoring
-- Query performance metrics
-- Database operations (inserts, updates, deletes)
-- Lock statistics and cache hit ratios
+### Current Stack Monitors:
+- ✅ **System Resources**: CPU, Memory, Disk usage
+- ✅ **Network I/O**: Interface statistics and traffic
+- ✅ **Disk I/O**: Read/write operations and throughput
+- ✅ **System Load**: Load averages and process counts
+- ✅ **File System**: Disk space usage per mount point
+
+### External Databases:
+- 🔗 **PostgreSQL**: Add postgres-exporter to your database compose
+- 🔗 **MySQL**: Add mysqld-exporter if needed
+- 🔗 **Redis**: Add redis-exporter if needed
+
+## 🔗 Adding PostgreSQL Monitoring
+
+To monitor PostgreSQL, add postgres-exporter to your database docker-compose:
+
+```yaml
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: your_postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:pass@postgres:5432/dbname?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+```
+
+Then uncomment postgres-exporter section in `prometheus/prometheus.yml` and update the target IP.
+
+## 🎯 Dashboards
 
 ### System Dashboard
 - CPU usage gauge and trends
 - Memory usage monitoring
 - Disk space and I/O metrics
 - Network traffic analysis
+- System load and uptime
 
 ## 🔔 Alerts
 
 Pre-configured alerts for:
 
-**PostgreSQL:**
-- Database connectivity issues
-- High connection count
-- Performance degradation
-
 **System:**
 - High CPU usage (>80%)
 - High memory usage (>90%)
 - Low disk space (>90% used)
+- High system load
 - Service availability
 
-## 🛠️ Configuration
+## 🛠️ Commands
 
-### Database Connection
-
-Edit `.env` file:
 ```bash
-POSTGRES_USER=your_username
-POSTGRES_PASSWORD=your_password
-POSTGRES_HOST=host.docker.internal  # For localhost connections
-POSTGRES_PORT=5445
-POSTGRES_DB=your_database
+# Start services
+make start
+
+# Stop services
+make stop
+
+# Check health
+make health
+
+# View logs
+make logs
+
+# Clean up everything
+make clean
 ```
-
-### Custom Dashboards
-
-Add custom dashboard JSON files to `grafana/dashboards/` directory for automatic provisioning.
-
-### Custom Alerts
-
-Add alert rules to `prometheus/rules/` following the existing YAML format.
 
 ## 📁 Project Structure
 
 ```
 postgresql-monitoring-stack/
-├── docker-compose.yml          # Main Docker Compose configuration
+├── docker-compose.yml          # Main monitoring stack
 ├── .env.example               # Environment variables template
-├── setup.sh                   # Automated setup script
-├── health-check.sh            # Health check script
-├── Makefile                   # Common operations
 ├── prometheus/
 │   ├── prometheus.yml         # Prometheus configuration
 │   └── rules/                 # Alert rules
@@ -121,100 +133,30 @@ postgresql-monitoring-stack/
 │   ├── provisioning/          # Grafana provisioning
 │   └── dashboards/            # Pre-built dashboards
 └── scripts/
-    └── set-permissions.sh     # Permission setup script
+    └── setup.sh               # Setup script
 ```
 
-## 🔧 Commands
+## 🔧 Extending Monitoring
 
-```bash
-# Start services
-make start
-# or
-docker-compose up -d
+### Add Database Monitoring:
+1. Add exporter to your database compose
+2. Uncomment relevant section in `prometheus.yml`
+3. Update target IP/port
+4. Import relevant Grafana dashboards
 
-# Stop services
-make stop
-# or
-docker-compose down
+### Add Custom Metrics:
+1. Add new scrape job in `prometheus.yml`
+2. Create custom dashboard in `grafana/dashboards/`
+3. Add alert rules in `prometheus/rules/`
 
-# Check health
-make health
-# or
-./health-check.sh
+## 🚀 Production Recommendations
 
-# View logs
-make logs
-# or
-docker-compose logs -f
-
-# Clean up everything
-make clean
-```
-
-## 🐛 Troubleshooting
-
-### PostgreSQL Connection Issues
-1. Verify PostgreSQL is running and accessible
-2. Check connection parameters in `.env` file
-3. For localhost connections, ensure `host.docker.internal` is used
-4. Review PostgreSQL logs for connection errors
-
-### Permission Issues
-```bash
-# Run permission setup
-chmod +x scripts/set-permissions.sh
-./scripts/set-permissions.sh
-```
-
-### Container Issues
-```bash
-# Check container status
-docker-compose ps
-
-# View specific service logs
-docker-compose logs [service-name]
-
-# Restart services
-docker-compose restart
-```
-
-## 🔒 Security
-
-For production deployments:
-- Change default Grafana admin password
-- Use environment-specific credentials
-- Implement proper firewall rules
-- Use TLS/SSL for external access
-- Restrict PostgreSQL access to monitoring user only
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⭐ Support
-
-If this project helps you, please give it a star! ⭐
-
-For issues and questions:
-- Create an [issue](https://github.com/opisboy29/postgresql-monitoring-stack/issues)
-- Review container logs for debugging
-
-## 📈 Roadmap
-
-- [ ] Add more database exporters (MySQL, MongoDB)
-- [ ] Implement Alertmanager for notifications
-- [ ] Add backup monitoring
-- [ ] Create Helm chart for Kubernetes deployment
-- [ ] Add more pre-built dashboards
+1. **Security**: Change default Grafana password
+2. **Storage**: Use external volumes for data persistence
+3. **Networking**: Use reverse proxy for external access
+4. **Backup**: Regular backup of Grafana dashboards
+5. **Monitoring**: Monitor the monitoring stack itself
 
 ---
 
-Made with ❤️ for the DevOps community
+**Focus**: System monitoring with extensible architecture for database monitoring
