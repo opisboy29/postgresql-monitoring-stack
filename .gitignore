@@ -1,0 +1,33 @@
+# Environment variables
+.env
+
+# Docker volumes
+prometheus_data/
+grafana_data/
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup 
