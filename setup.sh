@@ -11,9 +11,9 @@ mkdir -p grafana/provisioning/datasources
 mkdir -p grafana/provisioning/dashboards
 mkdir -p grafana/dashboards
 
-# Set proper permissions for Grafana
-echo "Setting permissions..."
-sudo chown -R 472:472 grafana/ 2>/dev/null || echo "Warning: Could not set Grafana permissions. You may need to run this with sudo."
+# Set basic permissions (tanpa sudo)
+echo "Setting basic permissions..."
+chmod -R 755 grafana/ 2>/dev/null || echo "Warning: Could not set some permissions"
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -46,5 +46,6 @@ echo "- Prometheus: http://localhost:9090"
 echo "- PostgreSQL Exporter: http://localhost:9187/metrics"
 echo "- Node Exporter: http://localhost:9100/metrics"
 echo ""
-echo "To view logs: docker-compose logs -f"
-echo "To stop services: docker-compose down" 
+echo "To view logs: make logs"
+echo "To check health: make health"
+echo "To stop services: make stop" 
