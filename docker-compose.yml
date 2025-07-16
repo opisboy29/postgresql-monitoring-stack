@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Exporter
   postgres-exporter:
@@ -22,7 +20,7 @@ services:
     ports:
       - "${NODE_EXPORTER_PORT:-9100}:9100"
     volumes:
-      - '/:/host:ro,rslave'
+      - '/:/host:ro'
     restart: always
     networks:
       - monitoring
