@@ -4,26 +4,32 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: ${POSTGRES_EXPORTER_CONTAINER_NAME:-postgres-exporter}
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5445}/${POSTGRES_DB:-public}?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@host.docker.internal:${POSTGRES_PORT:-5445}/${POSTGRES_DB:-public}?sslmode=disable"
+      PG_EXPORTER_WEB_LISTEN_ADDRESS: "0.0.0.0:9187"
     ports:
       - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
     restart: always
-    networks:
-      - monitoring
+    # NO NETWORKS - use default bridge
 
   # Node Exporter for server metrics
   node-exporter:
     image: prom/node-exporter:latest
     container_name: ${NODE_EXPORTER_CONTAINER_NAME:-node-exporter}
     command:
-      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--web.listen-address=0.0.0.0:9100'
     ports:
       - "${NODE_EXPORTER_PORT:-9100}:9100"
     volumes:
-      - '/:/host:ro'
+      - '/proc:/host/proc:ro'
+      - '/sys:/host/sys:ro'
+      - '/:/rootfs:ro'
     restart: always
-    networks:
-      - monitoring
+    pid: host
+    # NO NETWORKS - use default bridge
 
   # Prometheus
   prometheus:
@@ -36,15 +42,18 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
+      - '--web.listen-address=0.0.0.0:9090'
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus/rules:/etc/prometheus/rules
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     restart: always
-    networks:
-      - monitoring
+    # NO NETWORKS - use default bridge
+    depends_on:
+      - postgres-exporter
+      - node-exporter
 
   # Grafana
   grafana:
@@ -54,20 +63,17 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: always
-    networks:
-      - monitoring
+    # NO NETWORKS - use default bridge
+    depends_on:
+      - prometheus
 
 volumes:
   prometheus_data:
   grafana_data:
-
-networks:
-  monitoring:
-    driver: bridge 
