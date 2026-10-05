@@ -11,21 +11,21 @@ scrape_configs:
   # Prometheus itself
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9091']  # Host network port
+      - targets: ['localhost:9090']
     scrape_interval: 15s
 
-  # PostgreSQL Exporter - NOW CAN ACCESS ANY IP/CONTAINER
+  # PostgreSQL Exporter - VIA DOCKER GATEWAY
   - job_name: 'postgres-exporter'
     static_configs:
-      - targets: ['localhost:9187']  # Via host network
+      - targets: ['172.17.0.1:9187']  # ✅ Via Docker gateway - works from container
     scrape_interval: 30s
     scrape_timeout: 10s
     metrics_path: /metrics
 
-  # Node Exporter - Via host network
+  # Node Exporter - CONTAINER NAME
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['localhost:9100']  # Via host network
+      - targets: ['node-exporter:9100']  # ✅ Container name - same network
     scrape_interval: 30s
     scrape_timeout: 10s
     metrics_path: /metrics
